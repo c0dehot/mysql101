@@ -33,4 +33,8 @@ const db = new Database({
   database: "cms"
 });
 
-console.log( db )
+async function mainApp(){
+    let employeeList = await db.query( "SELECT * FROM employee")
+    console.log( employeeList )
+}
+mainApp()
