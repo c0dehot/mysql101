@@ -37,8 +37,103 @@ const db = new Database({
   insecureAuth : true
 });
 
+let response
+let role, department
+
 async function mainApp(){
-    let employeeList = await db.query( "SELECT * FROM employee")
-    console.log( employeeList )
+    // load roles & departments from the database
+    const dbRole = await db.query( "SELECT * FROM role")
+    role = []
+    dbRole.forEach( function( item ){
+        role.push( { name: item.title, value: item.id } )
+    })
+    console.log( `role: `, role )
+
+    const dbDept = await db.query( "SELECT * FROM department")
+    department = []
+    dbDept.forEach( function( item ){
+        department.push( { name: item.name, value: item.id } )
+    })
+    console.log( `department: `, department )
+
+    response = await inquirer.prompt([
+        {   message: "What do you want to do?", type: "list", name: "action", 
+            choices: [ 
+                { name: "Manage Departments", value: "department" },
+                { name: "Manage Roles", value: "role" }, 
+                { name: "Manage Employees", value: "employee" } ] }
+    ])
+
+    console.log( response.action )
+
+    if( response.action=="employee" ){
+        let employeeList = await db.query( "SELECT * FROM employee")
+
+        console.table( employeeList )
+
+        response = await inquirer.prompt([
+            {   message: "What do you want to do now?", type: "list", name: "action", 
+                choices: [
+                    { name: "Update Employee Role", value: "update" }, 
+                    { name: "Add Employee", value: "add" },
+                    { name: "Return to the main menu", value: "return" } 
+                ] 
+            }
+        ])        
+        
+        console.log( response.action )
+        if( response.action=="add" ){
+            response = await inquirer.prompt([
+                {   message: "What is their first name?", type: "input", name: "first_name" },
+                {   message: "What is their last name?", type: "input", name: "last_name" },
+                {   message: "What is their role", type: "list", name: "role",
+                    choices: role },
+                {   message: "What is their department", type: "list", name: "department",
+                    choices: department }                    
+            ]) 
+
+            console.log(  `user info: `, response )
+            //INSERT INTO employee VALUES( 0, "Employee2", "Lastname2", 1, 1 );
+            let saveResult = await db.query( "INSERT INTO employee VALUES( ?,?,?,?,? ) ", 
+                                            [ 0, response.first_name, response.last_name, response.role, 1 ] )
+            console.log( `.. user saved: new user-id=`, saveResult.insertId )
+
+        }
+        if( response.action=="return" ){
+            mainApp()
+        }
+    }
+
+
+//     // WIREFRAME
+// What do you want to do?
+// - Manage Departments
+// - Manage Roles
+// - Manage Employees
+
+// // --
+// Managing Departments
+//   1. Web Dev
+//   2. Sales
+//   3. Logistics
+
+//   What do you to do?
+//   - Add a new Department
+//   - Return to the main screen
+
+// // --
+//   1. Edmund Wong     $60,000  depament  role
+//   2. Damon  \t
+//   3. Doug
+//   4. Eddi
+
+//   What do you want to?
+//   - Update Employee Role
+//   - Add Employee
+//   - Return to the main menu
+
+  
+
+
 }
 mainApp()
