@@ -41,21 +41,6 @@ let response
 let role, department
 
 async function mainApp(){
-    // load roles & departments from the database
-    const dbRole = await db.query( "SELECT * FROM role")
-    role = []
-    dbRole.forEach( function( item ){
-        role.push( { name: item.title, value: item.id } )
-    })
-    console.log( `role: `, role )
-
-    const dbDept = await db.query( "SELECT * FROM department")
-    department = []
-    dbDept.forEach( function( item ){
-        department.push( { name: item.name, value: item.id } )
-    })
-    console.log( `department: `, department )
-
     response = await inquirer.prompt([
         {   message: "What do you want to do?", type: "list", name: "action", 
             choices: [ 
@@ -67,7 +52,12 @@ async function mainApp(){
     console.log( response.action )
 
     if( response.action=="employee" ){
-        let employeeList = await db.query( "SELECT * FROM employee")
+        let employeeList = await db.query( 
+            "SELECT CONCAT(e.first_name,' ',e.last_name) AS employeeName,"+
+            "CONCAT(m.first_name,' ',m.last_name) AS managerName,r.title,r.salary "+
+            "FROM employee AS e "+
+            "LEFT JOIN employee AS m ON(e.manager_id=m.id) "+
+            "LEFT JOIN role AS r ON(e.role_id=r.id)" )
 
         console.table( employeeList )
 
@@ -83,13 +73,21 @@ async function mainApp(){
         
         console.log( response.action )
         if( response.action=="add" ){
+            // load roles & departments from the database
+            const dbRole = await db.query( "SELECT * FROM role")
+            role = []
+            dbRole.forEach( function( item ){
+                role.push( { name: item.title, value: item.id } )
+            })
+            console.log( `role: `, role )
+                        
             response = await inquirer.prompt([
                 {   message: "What is their first name?", type: "input", name: "first_name" },
                 {   message: "What is their last name?", type: "input", name: "last_name" },
                 {   message: "What is their role", type: "list", name: "role",
                     choices: role },
-                {   message: "What is their department", type: "list", name: "department",
-                    choices: department }                    
+                {   message: "Who is their manager?", type: "list", name: "department",
+                    choices: [ "no one"] }                    
             ]) 
 
             console.log(  `user info: `, response )
